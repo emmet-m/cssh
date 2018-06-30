@@ -24,7 +24,7 @@ For now, this doesn't include but may extend into:
 * Running in the background (&)
 * Logical operators (&&, ||)
 * scripting flow control (while and for loops, if statements)
-* variables (e.g. `CURRDIR=\`pwd\``)
+* variables (e.g. ``CURRDIR=`pwd` ``)
 * Other fancy shell functionality
 
 ## How do you expect people to use this shell?
