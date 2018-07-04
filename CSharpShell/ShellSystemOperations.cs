@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 namespace CSharpShell
 {
@@ -15,14 +16,22 @@ namespace CSharpShell
          * Returns the absolute path of the program if the program was found, null otherwise
          */
         public static string CheckProgramExists(string progname) {
+            // Small check for program names
+            if (!progname.ToLower().EndsWith(".exe"))
+                progname += ".exe";
+
+            // First, check locally
+            if (File.Exists(progname))
+            {
+                return Path.GetFullPath(progname);
+            }
+
+            // attempt to find program somewhere in %PATH%
             string[] paths = Environment.GetEnvironmentVariable("PATH").Split(';');
-
-            Console.WriteLine(paths.Length);
-            Console.WriteLine(paths.ToString());
-
             foreach (string path in paths) {
-                if (File.Exists(path + progname)) {
-                    return path + progname;
+                string fullpath = Path.Combine(path, progname);
+                if (File.Exists(fullpath)) {
+                    return fullpath;
                 }
             }
 

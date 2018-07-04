@@ -12,9 +12,6 @@ namespace CSharpShell
 {
     public class CSharpShell
     {
-        /* Stateful variables */
-        public string currentDirectory;
-
         /* IO Wrapper */
         public ShellConsole console;
 
@@ -35,17 +32,11 @@ namespace CSharpShell
          */
         CSharpShell()
         {
-
             // Check we're running on a supported platform
             this.OsVersionCheck();
 
-            // Start off at parent processes working directory
-            this.currentDirectory = Directory.GetCurrentDirectory();
-
             // IO wrapper
             this.console = new ShellConsole();
-
-            return;
         }
 
         /*
@@ -53,62 +44,29 @@ namespace CSharpShell
          */
         void Menu()
         {
-
             // Read in shell input
             List<String> command = ShellInputOperations.Tokenise(this.console.ReadLine());
 
             // Enter key pressed
             if (command.Count == 0) return;
 
-            // Fetch command path
+            // Check program exists
             string commandPath = null;
-            if (!ShellSystemOperations.IsRelativeName(command[0]))
-            {
-                // Exists somewhere in %PATH%
-                commandPath = ShellSystemOperations.CheckProgramExists(command[0]);
-            }
-            else if (File.Exists(this.currentDirectory + command[0]))
-            {
-                // Relative path
-                commandPath = this.currentDirectory + command[0];
-            }
-
+            commandPath = ShellSystemOperations.CheckProgramExists(command[0]);
             string progName = command[0]; 
-
-            // Invalid somewhere along the way
             if (commandPath == null)
             {
-                this.console.WriteLine("Command '" + progName + "' not found.");
+                this.console.WriteLine("Program '" + progName + "' not found.");
                 return;
             }
 
             // turn into ARGV
             command.RemoveAt(0);
 
-            // Create new process, set info
-            Process running = new Process();
-            running.StartInfo.UseShellExecute = false;
-            running.StartInfo.FileName = commandPath;
-            running.StartInfo.Arguments = string.Join(" ", command);
-            try
-            {
-                running.Start();
-            }
-            catch (InvalidOperationException f)
-            {
-                console.WriteLine("Process somehow had no file name - Terminating...");
-                Environment.Exit(1);
-            }
-            catch (Win32Exception f)
-            {
-                this.console.WriteLine("Program '" + progName + "' not an executable file.");
-                this.console.WriteLine(f.Message);
-            }
-            // Wait for process to finish executing
+            // Run the program!
+            Process running = this.RunProgram(commandPath, string.Join(" ", command));
+            if (running == null) return;
             running.WaitForExit();
-
-            // Done!
-            return;
         }
 
         /*
@@ -132,6 +90,42 @@ namespace CSharpShell
                 Environment.Exit(1);
             }
 
+        }
+
+        /*
+         * Runs a program with the given absolute path name, it's arguments and optionally
+         * the command name that was entered by a user.
+         */ 
+        private Process RunProgram(string programName, string arguments, string enteredName = null)
+        {
+            // Create new process, set info
+            Process running = new Process();
+            running.StartInfo.UseShellExecute = false;
+            running.StartInfo.FileName = programName;
+            running.StartInfo.Arguments = arguments;
+            try
+            {
+                running.Start();
+            }
+            catch (InvalidOperationException f)
+            {
+                console.WriteLine("Process somehow had no file name - Terminating...");
+                console.WriteLine(f.Message);
+                Environment.Exit(1);
+            }
+            catch (Win32Exception f)
+            {
+                if (enteredName == null) { 
+                    this.console.WriteLine("Program '" + programName + "' not an executable file.");
+                } else {
+                    this.console.WriteLine("Program '" + enteredName + "' not an executable file.");
+                }
+                this.console.WriteLine(f.Message);
+
+                return null;
+            }
+
+            return running;
         }
     }
 }
