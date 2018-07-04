@@ -6,6 +6,13 @@ using System.Threading.Tasks;
 
 namespace CSharpShell
 {
+    /*
+     * Input Operations
+     * 
+     * Contains various functions for receiving input/sending output to/from the shell.
+     * 
+     * See also: ShellConsole.cs
+     */ 
     public static class ShellInputOperations
     {
         /*

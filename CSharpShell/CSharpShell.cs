@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
+using System.ComponentModel;
 
 
 namespace CSharpShell
@@ -11,15 +13,17 @@ namespace CSharpShell
     public class CSharpShell
     {
         /* Stateful variables */
-        string current_directory;
+        public string currentDirectory;
 
         /* IO Wrapper */
-        ShellConsole console;
+        public ShellConsole console;
 
         static void Main(string[] args)
         {
             CSharpShell sh = new CSharpShell();
-            while (true) {
+            while (true)
+            {
+                sh.PrintPrompt();
                 sh.Menu();
             }
         }
@@ -28,14 +32,15 @@ namespace CSharpShell
          * Constructor
          * 
          * Boots up the shell, loads all PATH and ENV information required
-         */ 
-        CSharpShell() {
+         */
+        CSharpShell()
+        {
 
             // Check we're running on a supported platform
             this.OsVersionCheck();
 
             // Start off at parent processes working directory
-            this.current_directory = Directory.GetCurrentDirectory();
+            this.currentDirectory = Directory.GetCurrentDirectory();
 
             // IO wrapper
             this.console = new ShellConsole();
@@ -45,19 +50,82 @@ namespace CSharpShell
 
         /*
          * The main program execution flow
-         */ 
-        void Menu() {
-            throw new NotImplementedException();
+         */
+        void Menu()
+        {
 
+            // Read in shell input
+            List<String> command = ShellInputOperations.Tokenise(this.console.ReadLine());
+
+            // Enter key pressed
+            if (command.Count == 0) return;
+
+            // Fetch command path
+            string commandPath = null;
+            if (!ShellSystemOperations.IsRelativeName(command[0]))
+            {
+                // Exists somewhere in %PATH%
+                commandPath = ShellSystemOperations.CheckProgramExists(command[0]);
+            }
+            else if (File.Exists(this.currentDirectory + command[0]))
+            {
+                // Relative path
+                commandPath = this.currentDirectory + command[0];
+            }
+
+            string progName = command[0]; 
+
+            // Invalid somewhere along the way
+            if (commandPath == null)
+            {
+                this.console.WriteLine("Command '" + progName + "' not found.");
+                return;
+            }
+
+            // turn into ARGV
+            command.RemoveAt(0);
+
+            // Create new process, set info
+            Process running = new Process();
+            running.StartInfo.UseShellExecute = false;
+            running.StartInfo.FileName = commandPath;
+            running.StartInfo.Arguments = string.Join(" ", command);
+            try
+            {
+                running.Start();
+            }
+            catch (InvalidOperationException f)
+            {
+                console.WriteLine("Process somehow had no file name - Terminating...");
+                Environment.Exit(1);
+            }
+            catch (Win32Exception f)
+            {
+                this.console.WriteLine("Program '" + progName + "' not an executable file.");
+                this.console.WriteLine(f.Message);
+            }
+            // Wait for process to finish executing
+            running.WaitForExit();
+
+            // Done!
             return;
+        }
+
+        /*
+         * Shows the current prompt
+         */
+        public void PrintPrompt()
+        {
+            this.console.Write("cssh> ");
         }
 
         /*
          * Ensures that we don't run in an environment that we don't support
          */
-        private void OsVersionCheck() {
-            if (! (Environment.OSVersion.Platform == PlatformID.Unix 
-                || Environment.OSVersion.Platform == PlatformID.MacOSX))
+        private void OsVersionCheck()
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix
+                || Environment.OSVersion.Platform == PlatformID.MacOSX)
             {
                 // Shutdown 
                 Console.WriteLine("Not supported for UNIX environments yet!");
