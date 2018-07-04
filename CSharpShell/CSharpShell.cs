@@ -52,16 +52,24 @@ namespace CSharpShell
 
             // Check program exists
             string commandPath = null;
-            commandPath = ShellSystemOperations.CheckProgramExists(command[0]);
             string progName = command[0]; 
+            commandPath = ShellSystemOperations.CheckProgramExists(progName);
+
+            // turn into ARGV
+            command.RemoveAt(0);
+
+            // In case command is special i.e. cd, exit, ...
+            if (SpecialCommands.RunSpecialCommand(progName, command, this.console))
+            {
+                return;
+            }
+
+            // Check exists
             if (commandPath == null)
             {
                 this.console.WriteLine("Program '" + progName + "' not found.");
                 return;
             }
-
-            // turn into ARGV
-            command.RemoveAt(0);
 
             // Run the program!
             Process running = this.RunProgram(commandPath, string.Join(" ", command));

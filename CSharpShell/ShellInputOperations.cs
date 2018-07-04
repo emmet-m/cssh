@@ -38,6 +38,9 @@ namespace CSharpShell
             // Now run through, joining up sections of quotes
             for (int i = 0; i < rawTokens.Length; ++i)
             {
+                // Ignore blank or empty lines
+                if (string.IsNullOrWhiteSpace(rawTokens[i])) continue;
+
                 if (rawTokens[i].StartsWith("\"")) {
                     // Found valid starting quote block, delete starting quote
                     rawTokens[i] = rawTokens[i].Remove(0,1);
