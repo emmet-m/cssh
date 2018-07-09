@@ -45,7 +45,16 @@ namespace CSharpShell
         void Menu()
         {
             // Read in shell input
-            List<String> command = ShellInputOperations.Tokenise(this.console.ReadLine());
+
+            List<String> command;
+            try
+            {
+                command = ShellInputOperations.Tokenise(ShellInputOperations.ReadCommand(this.console));
+            }
+            catch (ArgumentException) {
+                this.console.WriteLine("Error - Missing quote in input");
+                return;
+            }
 
             // Enter key pressed
             if (command.Count == 0) return;
